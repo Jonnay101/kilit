@@ -4,34 +4,35 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
-	"fmt"
 	"log"
 	"os/exec"
 	"strings"
 )
 
 func main() {
-	port := flag.String("p", "8080", "the port you want to kill")
+	portToKill := flag.String("p", ":8080", "the port you want to kill")
 	flag.Parse()
-	task := "lsof"
-	cmd := exec.Command(task, "-i", fmt.Sprintf(":%s", *port))
-	out, err := cmd.CombinedOutput()
+	// execute the command then fetch the combined standard out and error
+	// the standard out should be a table representation of the list of open files
+	lsofCommand := exec.Command("lsof", "-i", *portToKill)
+	lsofTable, err := lsofCommand.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
-	scanner := bufio.NewScanner(bytes.NewReader(out))
+	lsofTableReader := bytes.NewReader(lsofTable)
+	scanner := bufio.NewScanner(lsofTableReader)
 	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "COMMAND") {
-			continue
+	for scanner.Scan() { // for each row of the scanned table
+		lsofTableRow := scanner.Text()
+		if strings.Contains(lsofTableRow, "COMMAND") {
+			continue // ignore the title row of the table
 		}
-		if line == "" {
-			break
+		if lsofTableRow == "" {
+			break // if row is empty, cease iterating
 		}
-		words := strings.Fields(line)
-		pid := words[1]
-		kill := exec.Command("kill", "-9", pid)
-		kill.Run()
+		lsofTableCells := strings.Fields(lsofTableRow)
+		pid := lsofTableCells[1]
+		killCommand := exec.Command("kill", "-9", pid)
+		killCommand.Run()
 	}
 }
