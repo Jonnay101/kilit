@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/jonnay101/kilit/command"
 	"github.com/jonnay101/kilit/domain"
@@ -11,7 +12,7 @@ func main() {
 	port := flag.String("p", "8080", "the port you want to kill")
 	flag.Parse()
 
-	Do("lsof", "-i", *port)
+	Do("lsof", "-i", fmt.Sprintf(":%s", *port))
 }
 
 func Do(name string, params ...string) {
